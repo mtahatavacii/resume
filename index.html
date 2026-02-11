@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Muhammet Taha Tavacı - Middleware & DevOps Engineer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=VT323&display=swap" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --terminal-bg: #0d1117;
+            --terminal-fg: #00ff41;
+            --terminal-fg-dim: #00cc33;
+            --terminal-accent: #33ff66;
+            --terminal-error: #ff3366;
+            --terminal-warning: #ffcc00;
+            --terminal-info: #00ccff;
+            --border-color: #00ff41;
+            --shadow: rgba(0, 255, 65, 0.2);
+            --glow: rgba(0, 255, 65, 0.5);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'IBM Plex Mono', monospace;
+            background: var(--terminal-bg);
+            color: var(--terminal-fg);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* Scanline Effect */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.15),
+                rgba(0, 0, 0, 0.15) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            z-index: 1000;
+            animation: scanline 8s linear infinite;
+        }
+
+        @keyframes scanline {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(10px); }
+        }
+
+        /* CRT Flicker */
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.98; }
+        }
+
+        .container {
+            animation: flicker 0.15s infinite;
+        }
+
+        /* Matrix Rain Background */
+        .matrix-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.05;
+        }
+
+        /* Header Terminal */
+        header {
+            border-bottom: 2px solid var(--border-color);
+            padding: 1rem 2rem;
+            background: rgba(13, 17, 23, 0.95);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 0 20px var(--shadow);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .prompt {
+            color: var(--terminal-fg);
+            font-weight: 600;
+        }
+
+        .prompt::before {
+            content: 'root@tavaci:~$ ';
+            color: var(--terminal-accent);
+        }
+
+        nav {
+            display: flex;
+            gap: 2rem;
+        }
+
+        nav a {
+            color: var(--terminal-fg-dim);
+            text-decoration: none;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        nav a::before {
+            content: '[ ';
+            color: var(--terminal-accent);
+        }
+
+        nav a::after {
+            content: ' ]';
+            color: var(--terminal-accent);
+        }
+
+        nav a:hover {
+            color: var(--terminal-fg);
+            text-shadow: 0 0 10px var(--glow);
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Terminal Window */
+        .terminal-window {
+            border: 2px solid var(--border-color);
+            border-radius: 4px;
+            margin: 2rem 0;
+            background: rgba(13, 17, 23, 0.9);
+            box-shadow: 0 0 30px var(--shadow);
+        }
+
+        .terminal-header {
+            background: var(--terminal-fg);
+            color: var(--terminal-bg);
+            padding: 0.5rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+        }
+
+        .terminal-header::before {
+            content: '●●●';
+            letter-spacing: 3px;
+        }
+
+        .terminal-body {
+            padding: 2rem;
+			overflow-x: auto;
+        }
+
+        /* ASCII Art */
+        .ascii-art {
+            font-family: "JetBrains Mono", "Fira Code", "Courier New", monospace;
+            font-size: 12px;        
+            line-height: 1.05;     
+			letter-spacing: 0;
+			white-space: pre;
+			overflow-x: auto;
+			display: inline-block;
+			color: var(--terminal-accent);
+			text-shadow: 0 0 3px var(--glow);
+			margin-bottom: 2rem;
+			overflow-y: hidden;
+        }
+
+        /* Command Line */
+        .cmd-line {
+            margin: 1rem 0;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .cmd-prompt {
+            color: var(--terminal-accent);
+            margin-right: 0.5rem;
+            white-space: nowrap;
+        }
+
+        .cmd-output {
+            color: var(--terminal-fg);
+            flex: 1;
+        }
+
+        .cmd-comment {
+            color: var(--terminal-fg-dim);
+            font-style: italic;
+        }
+
+        /* Typing Animation */
+        .typing {
+            overflow: hidden;
+            border-right: 2px solid var(--terminal-fg);
+            white-space: nowrap;
+            animation: typing 3s steps(40, end), blink-caret 0.75s step-end infinite;
+            display: inline-block;
+        }
+
+        @keyframes typing {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+
+        @keyframes blink-caret {
+            from, to { border-color: transparent; }
+            50% { border-color: var(--terminal-fg); }
+        }
+
+        /* File Tree */
+        .file-tree {
+            font-family: 'IBM Plex Mono', monospace;
+            margin: 1rem 0;
+        }
+
+        .file-tree-item {
+            margin: 0.3rem 0;
+            padding-left: 1rem;
+        }
+
+        .file-tree-item::before {
+            content: '├── ';
+            color: var(--terminal-fg-dim);
+        }
+
+        .file-tree-item:last-child::before {
+            content: '└── ';
+        }
+
+        .directory {
+            color: var(--terminal-info);
+            font-weight: 600;
+        }
+
+        .file {
+            color: var(--terminal-fg);
+        }
+
+        /* Info Boxes */
+        .info-box {
+            border: 1px solid var(--border-color);
+            padding: 1.5rem;
+            margin: 1rem 0;
+            background: rgba(0, 255, 65, 0.05);
+        }
+
+        .info-box-header {
+            color: var(--terminal-accent);
+            font-weight: 600;
+            margin-bottom: 1rem;
+            border-bottom: 1px dashed var(--terminal-fg-dim);
+            padding-bottom: 0.5rem;
+        }
+
+        .info-box-header::before {
+            content: '# ';
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .stat-item {
+            border: 1px solid var(--border-color);
+            padding: 1rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-item:hover {
+            background: rgba(0, 255, 65, 0.1);
+            box-shadow: 0 0 20px var(--shadow);
+            transform: scale(1.05);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--terminal-accent);
+            text-shadow: 0 0 10px var(--glow);
+        }
+
+        .stat-label {
+            color: var(--terminal-fg-dim);
+            margin-top: 0.5rem;
+        }
+
+        /* Skills List */
+        .skills-section {
+            margin: 2rem 0;
+        }
+
+        .skill-category {
+            margin: 1.5rem 0;
+        }
+
+        .skill-header {
+            color: var(--terminal-warning);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .skill-header::before {
+            content: '>> ';
+            color: var(--terminal-accent);
+        }
+
+        .skill-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding-left: 2rem;
+        }
+
+        .skill-tag {
+            background: rgba(0, 255, 65, 0.1);
+            border: 1px solid var(--border-color);
+            padding: 0.3rem 0.8rem;
+            color: var(--terminal-fg);
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+
+        .skill-tag:hover {
+            background: rgba(0, 255, 65, 0.2);
+            box-shadow: 0 0 10px var(--shadow);
+            transform: translateY(-2px);
+        }
+
+        /* Timeline */
+        .timeline {
+            position: relative;
+            padding-left: 2rem;
+            margin: 2rem 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--border-color);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 2rem;
+            padding-left: 2rem;
+        }
+
+        .timeline-item::before {
+            content: '█';
+            position: absolute;
+            left: -0.6rem;
+            color: var(--terminal-accent);
+            font-size: 1.2rem;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .timeline-date {
+            color: var(--terminal-info);
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .timeline-title {
+            color: var(--terminal-accent);
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+        }
+
+        .timeline-company {
+            color: var(--terminal-warning);
+            margin-bottom: 0.5rem;
+        }
+
+        .timeline-desc {
+            color: var(--terminal-fg);
+            margin-bottom: 0.5rem;
+        }
+
+        .timeline-list {
+            list-style: none;
+            padding-left: 1rem;
+        }
+
+        .timeline-list li {
+            color: var(--terminal-fg-dim);
+            margin: 0.3rem 0;
+        }
+
+        .timeline-list li::before {
+            content: '→ ';
+            color: var(--terminal-accent);
+        }
+
+        /* Contact Links */
+        .contact-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .contact-link {
+            border: 1px solid var(--border-color);
+            padding: 1.5rem;
+            text-decoration: none;
+            color: var(--terminal-fg);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .contact-link:hover {
+            background: rgba(0, 255, 65, 0.1);
+            box-shadow: 0 0 20px var(--shadow);
+            transform: translateX(10px);
+        }
+
+        .contact-icon {
+            font-size: 2rem;
+            color: var(--terminal-accent);
+        }
+
+        .contact-info h3 {
+            color: var(--terminal-accent);
+            margin-bottom: 0.3rem;
+        }
+
+        .contact-info p {
+            color: var(--terminal-fg-dim);
+            font-size: 0.9rem;
+        }
+
+        /* Footer */
+        footer {
+            border-top: 2px solid var(--border-color);
+            padding: 2rem;
+            text-align: center;
+            margin-top: 4rem;
+            color: var(--terminal-fg-dim);
+        }
+
+        .footer-ascii {
+            font-family: 'VT323', monospace;
+            font-size: 0.6rem;
+            color: var(--terminal-accent);
+            opacity: 0.3;
+            margin-top: 1rem;
+        }
+
+        /* Cursor Blink */
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 20px;
+            background: var(--terminal-fg);
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            nav {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .ascii-art {
+                font-size: 0.5rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .timeline {
+                padding-left: 1rem;
+            }
+
+            .timeline-item {
+                padding-left: 1rem;
+            }
+        }
+
+        /* Code Block */
+        .code-block {
+            background: rgba(0, 0, 0, 0.3);
+            border-left: 3px solid var(--terminal-accent);
+            padding: 1rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+        }
+
+        .code-line {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .line-number {
+            color: var(--terminal-fg-dim);
+            user-select: none;
+        }
+
+        .line-content {
+            color: var(--terminal-fg);
+        }
+
+        /* Section Divider */
+        .section-divider {
+            margin: 3rem 0;
+            text-align: center;
+            color: var(--terminal-accent);
+        }
+
+        .section-divider::before,
+        .section-divider::after {
+            content: '═══════════════════════';
+            color: var(--border-color);
+        }
+
+        .section-divider::before {
+            margin-right: 1rem;
+        }
+
+        .section-divider::after {
+            margin-left: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Matrix Background Canvas -->
+    <canvas class="matrix-bg" id="matrixCanvas"></canvas>
+
+    <!-- Header -->
+    <header>
+        <div class="header-content">
+            <div class="prompt">mtahatavaci.sh</div>
+            <nav>
+                <a href="#about">about</a>
+                <a href="#skills">skills</a>
+                <a href="#experience">experience</a>
+                <a href="#contact">contact</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Hero Section -->
+        <div class="terminal-window" id="about">
+            <div class="terminal-header">~/profile/about.sh</div>
+            <div class="terminal-body">
+                <pre class="ascii-art">
+╔═════════════════════════════════════════════════════════════════════════════════════════════╗
+║                                                                                             ║   
+║   ███╗   ███╗██╗   ██╗██╗  ██╗ █████╗ ███╗   ███╗███╗   ███╗███████╗████████╗               ║  
+║   ████╗ ████║██║   ██║██║  ██║██╔══██╗████╗ ████║████╗ ████║██╔════╝╚══██╔══╝               ║  
+║   ██╔████╔██║██║   ██║███████║███████║██╔████╔██║██╔████╔██║█████╗     ██║                  ║  
+║   ██║╚██╔╝██║██║   ██║██╔══██║██╔══██║██║╚██╔╝██║██║╚██╔╝██║██╔══╝     ██║                  ║  
+║   ██║ ╚═╝ ██║╚██████╔╝██║  ██║██║  ██║██║ ╚═╝ ██║██║ ╚═╝ ██║███████╗   ██║                  ║  
+║   ╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝╚═╝     ╚═╝╚══════╝   ╚═╝                  ║  
+║                                                                                             ║
+║        ████████╗ █████╗ ██╗  ██╗ █████╗     ████████╗ █████╗ ██╗   ██╗ █████╗  ██████╗██╗   ║
+║        ╚══██╔══╝██╔══██╗██║  ██║██╔══██╗    ╚══██╔══╝██╔══██╗██║   ██║██╔══██╗██╔════╝██║   ║
+║           ██║   ███████║███████║███████║       ██║   ███████║██║   ██║███████║██║     ██║   ║
+║           ██║   ██╔══██║██╔══██║██╔══██║       ██║   ██╔══██║╚██╗ ██╔╝██╔══██║██║     ██║   ║
+║           ██║   ██║  ██║██║  ██║██║  ██║       ██║   ██║  ██║ ╚████╔╝ ██║  ██║╚██████╗██║   ║
+║           ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝       ╚═╝   ╚═╝  ╚═╝  ╚═══╝  ╚═╝  ╚═╝ ╚═════╝╚═╝   ║
+║                                                                                             ║
+╚═════════════════════════════════════════════════════════════════════════════════════════════╝
+                </pre>
+
+                <div class="cmd-line">
+                    <span class="cmd-prompt">$</span>
+                    <span class="cmd-output">cat /etc/profile</span>
+                </div>
+
+                <div class="info-box">
+                    <div class="info-box-header">System Information</div>
+                    <div class="cmd-line">
+                        <span class="cmd-prompt">USER:</span>
+                        <span class="cmd-output">Muhammet Taha Tavacı</span>
+                    </div>
+                    <div class="cmd-line">
+                        <span class="cmd-prompt">ROLE:</span>
+                        <span class="cmd-output">Middleware & DevOps Engineer</span>
+                    </div>
+                    <div class="cmd-line">
+                        <span class="cmd-prompt">LOCATION:</span>
+                        <span class="cmd-output">Bursa, Turkey</span>
+                    </div>
+                    <div class="cmd-line">
+                        <span class="cmd-prompt">SHELL:</span>
+                        <span class="cmd-output">/bin/bash</span>
+                    </div>
+                </div>
+
+                <div class="cmd-line">
+                    <span class="cmd-prompt">$</span>
+                    <span class="cmd-output">cat README.md</span>
+                </div>
+
+                <div class="code-block">
+                    <p>Dedicated Middleware & DevOps Engineer with extensive experience in managing production-grade infrastructure, CI/CD pipelines, and middleware platforms. Skilled in system monitoring, server automation with Bash, and end-to-end deployment workflows using GitLab.</p>
+                    <br>
+                    <p>Adept at managing environments with WebLogic, Tomcat, Docker, Kubernetes, and observability stacks such as Grafana and ELK. Focused on high availability, performance optimization, and disaster recovery readiness.</p>
+                </div>
+
+
+        <!-- Skills Section -->
+        <div class="section-divider">SKILLS</div>
+
+        <div class="terminal-window" id="skills">
+            <div class="terminal-header">~/profile/skills.sh</div>
+            <div class="terminal-body">
+                <div class="cmd-line">
+                    <span class="cmd-prompt">$</span>
+                    <span class="cmd-output">ls -la /usr/local/bin/skills/</span>
+                </div>
+
+                <div class="skills-section">
+                    <div class="skill-category">
+                        <div class="skill-header">Cloud & DevOps</div>
+                        <div class="skill-items">
+                            <span class="skill-tag">AWS</span>
+                            <span class="skill-tag">Kubernetes</span>
+                            <span class="skill-tag">Docker</span>
+                            <span class="skill-tag">GitLab CI/CD</span>
+                            <span class="skill-tag">Jenkins</span>
+                            <span class="skill-tag">Terraform</span>
+                        </div>
+                    </div>
+
+                    <div class="skill-category">
+                        <div class="skill-header">Middleware</div>
+                        <div class="skill-items">
+                            <span class="skill-tag">WebLogic</span>
+                            <span class="skill-tag">Tomcat</span>
+                            <span class="skill-tag">Nginx</span>
+                            <span class="skill-tag">AmazonMQ</span>
+                        </div>
+                    </div>
+
+                    <div class="skill-category">
+                        <div class="skill-header">Monitoring & Observability</div>
+                        <div class="skill-items">
+                            <span class="skill-tag">Dynatrace</span>
+                            <span class="skill-tag">AppDynamics</span>
+                            <span class="skill-tag">Grafana</span>
+                            <span class="skill-tag">Prometheus</span>
+                            <span class="skill-tag">ELK Stack</span>
+                            <span class="skill-tag">Graylog</span>
+                            <span class="skill-tag">Site24x7</span>
+                        </div>
+                    </div>
+
+                    <div class="skill-category">
+                        <div class="skill-header">Programming & Scripting</div>
+                        <div class="skill-items">
+                            <span class="skill-tag">Bash</span>
+                            <span class="skill-tag">Python</span>
+                            <span class="skill-tag">Shell Scripting</span>
+                            <span class="skill-tag">Automation</span>
+                        </div>
+                    </div>
+
+                    <div class="skill-category">
+                        <div class="skill-header">Database</div>
+                        <div class="skill-items">
+                            <span class="skill-tag">PostgreSQL</span>
+                            <span class="skill-tag">MSSQL</span>
+                            <span class="skill-tag">InfluxDB</span>
+                        </div>
+                    </div>
+
+                    <div class="skill-category">
+                        <div class="skill-header">Core Competencies</div>
+                        <div class="skill-items">
+                            <span class="skill-tag">Troubleshooting</span>
+                            <span class="skill-tag">Documentation</span>
+                            <span class="skill-tag">Decision Making</span>
+                            <span class="skill-tag">Technical Presentations</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Experience Section -->
+        <div class="section-divider">EXPERIENCE</div>
+
+        <div class="terminal-window" id="experience">
+            <div class="terminal-header">~/profile/experience.sh</div>
+            <div class="terminal-body">
+                <div class="cmd-line">
+                    <span class="cmd-prompt">$</span>
+                    <span class="cmd-output">git log --all --oneline --graph</span>
+                </div>
+
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-date">[05/2022 - Present]</div>
+                        <div class="timeline-title">Middleware & DevOps Engineer</div>
+                        <div class="timeline-company">PRIME IT (Consultant for ETIYA, AK Sigorta, ACN Türk) - Istanbul</div>
+                        <div class="timeline-desc"></div>
+                        <ul class="timeline-list">
+                            <li>Managed approximately 200 servers across production, pre-production, and testing environments</li>
+                            <li>Developed Bash scripts to proactively prevent issues and automate system maintenance tasks</li>
+                            <li>Administered WebLogic, Tomcat, Docker, Kubernetes, and Nginx environments</li>
+                            <li>Built and maintained CI/CD pipelines in GitLab to streamline application deployment</li>
+                            <li>Monitored infrastructure using Dynatrace, AppDynamics, Site24x7, ELK, Graylog, Prometheus, Grafana</li>
+                            <li>Automated SSL certificate updates via Jenkins pipeline, reducing manual effort by 80%</li>
+                            <li>Configured full application stack in secondary data center for disaster recovery</li>
+                            <li>Created Python and Bash automation scripts for improved deployment speed</li>
+                            <li>Designed custom scaling mechanisms for application-specific needs</li>
+                            <li>Deployed DevOps tools on AWS EKS using Terraform and IaC best practices</li>
+                            <li>Performed version upgrades for Kubernetes, NGINX, and WebLogic with minimal downtime</li>
+                        </ul>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-date">[05/2021 - 02/2022]</div>
+                        <div class="timeline-title">Project Intern</div>
+                        <div class="timeline-company">GROUPE RENAULT - Bursa</div>
+                        <div class="timeline-desc"></div>
+                        <ul class="timeline-list">
+                            <li>Extracted and processed PLC data from machines using Simatic Manager</li>
+                            <li>Built PostgreSQL/MSSQL databases and data formatting functions</li>
+                            <li>Visualized production data with Grafana dashboards for real-time insights</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Section -->
+        <div class="section-divider">CONTACT</div>
+
+        <div class="terminal-window" id="contact">
+            <div class="terminal-header">~/profile/contact.sh</div>
+            <div class="terminal-body">
+                <div class="cmd-line">
+                    <span class="cmd-prompt">$</span>
+                    <span class="cmd-output">cat /etc/contacts.conf</span>
+                </div>
+
+                <div class="contact-links">
+                    <a href="mailto:mtahatavaci@gmail.com" class="contact-link">
+                        <div class="contact-icon">📧</div>
+                        <div class="contact-info">
+                            <h3>Email</h3>
+                            <p>mtahatavaci@gmail.com</p>
+                        </div>
+                    </a>
+
+                    <a href="https://www.linkedin.com/in/mtahatavaci" target="_blank" class="contact-link">
+                        <div class="contact-icon">💼</div>
+                        <div class="contact-info">
+                            <h3>LinkedIn</h3>
+                            <p>linkedin.com/in/mtahatavaci</p>
+                        </div>
+                    </a>
+
+                    <a href="#" class="contact-link">
+                        <div class="contact-icon">📍</div>
+                        <div class="contact-info">
+                            <h3>Location</h3>
+                            <p>Bursa, Turkey</p>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="code-block" style="margin-top: 2rem;">
+                    <div class="code-line">
+                        <span class="line-number">1</span>
+                        <span class="line-content">#!/bin/bash</span>
+                    </div>
+                    <div class="code-line">
+                        <span class="line-number">2</span>
+                        <span class="line-content"># Feel free to reach out for projects or opportunities</span>
+                    </div>
+                    <div class="code-line">
+                        <span class="line-number">3</span>
+                        <span class="line-content">echo "Let's build something great together!"</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="cmd-line" style="justify-content: center;">
+            <span class="cmd-prompt">$</span>
+            <span class="cmd-output">echo "© 2025 Muhammet Taha Tavacı | DevOps & Middleware Engineer"</span>
+        </div>
+        <div class="footer-ascii">
+        ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+        </div>
+    </footer>
+
+    <script>
+        // Matrix Rain Effect
+        const canvas = document.getElementById('matrixCanvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
+        const fontSize = 14;
+        const columns = canvas.width / fontSize;
+        const drops = Array(Math.floor(columns)).fill(1);
+
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(13, 17, 23, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#00ff41';
+            ctx.font = fontSize + 'px monospace';
+
+            for (let i = 0; i < drops.length; i++) {
+                const text = chars.charAt(Math.floor(Math.random() * chars.length));
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+        }
+
+        setInterval(drawMatrix, 50);
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        // Smooth Scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        // Add cursor to prompt
+        const prompts = document.querySelectorAll('.cmd-prompt');
+        setInterval(() => {
+            prompts.forEach(prompt => {
+                if (Math.random() > 0.5) {
+                    prompt.style.opacity = prompt.style.opacity === '0.5' ? '1' : '0.5';
+                }
+            });
+        }, 500);
+    </script>
+</body>
+</html>
